@@ -19,7 +19,8 @@ jobs:
         steps:
             - uses: actions/checkout@v2
             - name: Test
-              run: echo ${{secrets.TOKEN}}
+              env: TOKEN: ${{secrets.TOKEN}}
+              run: echo TOKEN
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
               with:
