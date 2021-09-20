@@ -26,10 +26,11 @@ jobs:
                   cache: 'npm'
             - name: Install dependencies
               run: npm i
-            - name: Crate .env file
+            - name: Create .env file
               uses: SpicyPizza/create-envfile@v1.1
               with:
                   envkey_TOKEN: ${{secrets.TOKEN}}
                   envkey_PREFIX: ${{secrets.PREFIX}}
+                  file_name: .env
 
             - run: pm2 restart bot-discord
