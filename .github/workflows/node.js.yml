@@ -21,7 +21,8 @@ jobs:
             - name: Test
               env:
                   TOKEN: ${{secrets.TOKEN}}
-              run: echo TOKEN
+                  TOKEN2: ${{secrets.TOKEN2}}
+              run: echo $TOKEN
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v2
               with:
