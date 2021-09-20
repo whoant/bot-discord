@@ -1,95 +1,117 @@
 require('dotenv').config();
-const { Client } = require('discord.js');
-
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, StreamType } = require('@discordjs/voice');
-
-const ytdl = require('ytdl-core-discord');
-const ytSearch = require('yt-search');
-
-const fs = require('fs');
-
-const to = require('./to');
-const { join } = require('path');
-
-const PREFIX = process.env.PREFIX;
+const { Client, Intents } = require('discord.js');
+const { Player, RepeatMode } = require('discord-music-player');
 
 const client = new Client({
-    intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_VOICE_STATES'],
+    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
 });
 
-client.once('ready', () => {
-    console.log(`${client.user.tag} has logged in !`);
+const TOKEN = process.env.TOKEN_BOT;
+const PREFIX = process.env.PREFIX;
+
+const player = new Player(client, {
+    leaveOnEmpty: false,
+});
+
+client.player = player;
+
+client.on('ready', () => {
+    console.log('Online !');
 });
 
 client.on('messageCreate', async (message) => {
-    const { content } = message;
-    const voiceChannel = message.member.voice.channel;
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
+    const command = args.shift();
+    let guildQueue = client.player.getQueue(message.guild.id);
 
-    if (!content.startsWith(PREFIX) || message.author.bot) return;
+    if (command === 'p') {
+        message.reply('Đợi 1 xíu, bot đang search 😘');
 
-    if (!voiceChannel) {
-        return message.reply('Bạn phải trong phòng nghe mới được gọi !');
-    }
+        try {
+            let queue = client.player.createQueue(message.guild.id, {
+                data: message,
+            });
+            await queue.join(message.member.voice.channel);
 
-    const [CMD_NAME, ...args] = content.trim().substring(PREFIX.length).split(' ');
-
-    let link = args.join(' ');
-
-    if (!ytdl.validateURL(link)) {
-        const [err, info] = await to(ytSearch(link));
-
-        if (err) {
-            return message.reply('Không tìm thấy bài hát !');
+            let song = await queue.play(args.join(' ')).catch((_) => {
+                if (!guildQueue) queue.stop();
+            });
+        } catch (error) {
+            message.reply('Bot không đủ quyền để vào room đó 😌');
         }
-
-        link = info.videos[0].url;
     }
 
-    const [err, info] = await to(ytdl.getInfo(link, { filter: 'audioonly' }));
-    if (err) {
-        return message.reply('Không tìm thấy bài hát !');
+    if (command === 'playlist') {
+        let queue = client.player.createQueue(message.guild.id);
+        await queue.join(message.member.voice.channel);
+        let song = await queue.playlist(args.join(' ')).catch((_) => {
+            if (!guildQueue) queue.stop();
+        });
     }
 
-    fs.writeFileSync('data.json', JSON.stringify(info));
+    if (command === 'skip') {
+        guildQueue.skip();
+    }
 
-    const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: message.guild.id,
-        adapterCreator: message.guild.voiceAdapterCreator,
-    });
+    if (command === 'stop') {
+        guildQueue.stop();
+    }
 
-    const player = createAudioPlayer();
+    if (command === 'removeLoop') {
+        guildQueue.setRepeatMode(RepeatMode.DISABLED);
+    }
 
-    const { formats } = info;
+    if (command === 'toggleLoop') {
+        guildQueue.setRepeatMode(RepeatMode.SONG);
+    }
 
-    console.log(formats.length);
-    const linkSound = formats[formats.length - 1].url;
-    console.log(linkSound);
+    if (command === 'toggleQueueLoop') {
+        guildQueue.setRepeatMode(RepeatMode.QUEUE);
+    }
 
-    // const resource = createAudioResource(join(__dirname, 'music2.mp3'), {
-    //     // inputType: StreamType.WebmOpus,
-    //     inlineVolume: true,
-    // });
-    const resource = createAudioResource(linkSound, {
-        inputType: StreamType.WebmOpus,
-        inlineVolume: true,
-    });
-    player.play(resource);
+    if (command === 'setVolume') {
+        guildQueue.setVolume(parseInt(args[0]));
+    }
 
-    connection.on('stateChange', (oldState, newState) => {
-        console.log(`Connection transitioned from ${oldState.status} to ${newState.status}`);
-    });
+    if (command === 'seek') {
+        guildQueue.seek(parseInt(args[0]) * 1000);
+    }
 
-    player.on('stateChange', (oldState, newState) => {
-        console.log(`Audio player transitioned from ${oldState.status} to ${newState.status}`);
-    });
+    if (command === 'clearQueue') {
+        guildQueue.clearQueue();
+    }
 
-    player.on('error', (error) => {
-        console.error('Error:', error.message, 'with track', error.resource.metadata.title);
-    });
+    if (command === 'shuffle') {
+        guildQueue.shuffle();
+    }
 
-    connection.subscribe(player);
-    message.reply(`:notes: **${info.videoDetails.title}** vào danh sách !`);
+    if (command === 'getQueue') {
+        console.log(guildQueue.songs[0].name);
+    }
+
+    if (command === 'getVolume') {
+        console.log(guildQueue.volume);
+    }
+
+    if (command === 'nowPlaying') {
+        console.log(`Now playing: ${guildQueue.nowPlaying}`);
+    }
+
+    if (command === 'pause') {
+        guildQueue.setPaused(true);
+    }
+
+    if (command === 'resume') {
+        guildQueue.setPaused(false);
+    }
+
+    if (command === 'remove') {
+        guildQueue.remove(parseInt(args[0]));
+    }
 });
 
-client.login(process.env.TOKEN_BOT);
+client.player.on('songAdd', (queue, song) => {
+    queue.data.reply(`**${song}** đã thêm vào danh sách`);
+});
+
+client.login(TOKEN);
