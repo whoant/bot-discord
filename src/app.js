@@ -112,15 +112,17 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'nowPlaying') {
-        console.log(`Now playing: ${guildQueue.nowPlaying}`);
+        message.reply(`Bài hát hiện tại : **${guildQueue.nowPlaying}**`);
     }
 
     if (command === 'pause') {
         guildQueue.setPaused(true);
+        message.reply('Dừng phát nhạc !');
     }
 
     if (command === 'resume') {
         guildQueue.setPaused(false);
+        message.reply('Chạy lại nhạc rồi !');
     }
 
     if (command === 'remove') {
