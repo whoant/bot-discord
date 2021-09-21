@@ -131,7 +131,7 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'help') {
-        const text = ` \`\`\` p {từ khoá|link youtube}: thêm nhạc \n q: danh sách nhạc \n skip: nhảy qua bài mới \n pause: dừng nhạc \n resume: tiếp tục nhạc \n stop: đuổi bot \n nowPlaying: nhạc phát hiện tại \`\`\``;
+        const text = ` \`\`\`Tiền tố để sử dụng Bot : ${PREFIX} \n p {từ khoá|link youtube}: thêm nhạc \n q: danh sách nhạc \n skip: nhảy qua bài mới \n pause: dừng nhạc \n resume: tiếp tục nhạc \n stop: đuổi bot \n nowPlaying: nhạc phát hiện tại \`\`\``;
         message.reply(text);
     }
 });
