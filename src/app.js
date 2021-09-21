@@ -131,7 +131,18 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'help') {
-        const text = ` \`\`\`Tiền tố để sử dụng Bot : ${PREFIX} \n p {từ khoá|link youtube}: thêm nhạc \n q: danh sách nhạc \n skip: nhảy qua bài mới \n pause: dừng nhạc \n resume: tiếp tục nhạc \n stop: đuổi bot \n nowPlaying: nhạc phát hiện tại \`\`\``;
+        const a = [
+            `Tiền tố để sử dụng BOT : ${PREFIX}`,
+            'p {từ khoá|link youtube}: thêm nhạc',
+            'q: danh sách nhạc',
+            'skip: nhảy qua bài mới',
+            'pause: dừng nhạc',
+            'resume: tiếp tục nhạc',
+            'stop: đuổi bot',
+            'nowPlaying: nhạc phát hiện tại',
+        ];
+
+        const text = ` \`\`\`${a.join('\n')}\`\`\``;
         message.reply(text);
     }
 });
