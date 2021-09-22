@@ -6,6 +6,8 @@ const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
 });
 
+const MODE_MUSIC = ['Chưa vào vòng lặp', 'Vòng lặp 1 bài ', 'Vòng lặp cả danh sách'];
+
 const TOKEN = process.env.TOKEN_BOT;
 const PREFIX = process.env.PREFIX;
 
@@ -57,35 +59,23 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'stop') {
+        message.channel.send('Bot đi đây :((( ');
         guildQueue.stop();
     }
 
     if (command === 'removeLoop') {
+        message.channel.send('Tắt vòng lặp thành công !');
         guildQueue.setRepeatMode(RepeatMode.DISABLED);
     }
 
-    if (command === 'toggleLoop') {
+    if (command === 'loop') {
+        message.channel.send('Bật vòng lặp 1 bài thành công !');
         guildQueue.setRepeatMode(RepeatMode.SONG);
     }
 
-    if (command === 'toggleQueueLoop') {
+    if (command === 'loopQueue') {
+        message.channel.send('Bật vòng lặp cả danh sách thành công !');
         guildQueue.setRepeatMode(RepeatMode.QUEUE);
-    }
-
-    if (command === 'setVolume') {
-        guildQueue.setVolume(parseInt(args[0]));
-    }
-
-    if (command === 'seek') {
-        guildQueue.seek(parseInt(args[0]) * 1000);
-    }
-
-    if (command === 'clearQueue') {
-        guildQueue.clearQueue();
-    }
-
-    if (command === 'shuffle') {
-        guildQueue.shuffle();
     }
 
     //queue
@@ -97,18 +87,16 @@ client.on('messageCreate', async (message) => {
             return;
         }
 
+        const { repeatMode } = guildQueue;
+
         guildQueue.songs.forEach((element, i) => {
             listSong.push(`[${i + 1}] : ${element.name} - ${element.duration}`);
         });
 
-        const text = `\`\`\` Bài hát hiện tại: ${
-            guildQueue.nowPlaying
+        const text = `\`\`\` Bài hát hiện tại: ${guildQueue.nowPlaying} \nChế độ hiện tại: ${
+            MODE_MUSIC[repeatMode]
         } \n\n -----> ĐANG TRONG HÀNG ĐỢI <----- \n\n${listSong.join('\n')} \`\`\``;
         message.reply(text);
-    }
-
-    if (command === 'getVolume') {
-        console.log(guildQueue.volume);
     }
 
     if (command === 'nowPlaying') {
@@ -125,11 +113,6 @@ client.on('messageCreate', async (message) => {
         message.reply('Chạy lại nhạc rồi !');
     }
 
-    if (command === 'remove') {
-        console.log(args[0]);
-        guildQueue.remove(parseInt(args[0]));
-    }
-
     if (command === 'help') {
         const a = [
             `Tiền tố để sử dụng BOT : ${PREFIX}`,
@@ -140,6 +123,9 @@ client.on('messageCreate', async (message) => {
             'resume: tiếp tục nhạc',
             'stop: đuổi bot',
             'nowPlaying: nhạc phát hiện tại',
+            'loop: chế độ lặp 1 bài',
+            'loopQueue: chế độ lập cả danh sách',
+            'removeLoop: xoá chế độ lặp',
         ];
 
         const text = ` \`\`\`${a.join('\n')}\`\`\``;
