@@ -30,8 +30,8 @@ client.on('messageCreate', async (message) => {
     let guildQueue = client.player.getQueue(message.guild.id);
 
     if (command === 'p') {
-        message.reply('Đợi 1 xíu, bot đang search 😘');
-
+        await message.reply('Đợi 1 xíu, bot đang search 😘');
+        await message.channel.sendTyping();
         try {
             let queue = client.player.createQueue(message.guild.id, {
                 data: message,
