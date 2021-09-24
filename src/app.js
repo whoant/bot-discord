@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { Client, Intents } = require('discord.js');
 const { Player, RepeatMode } = require('discord-music-player');
+const { regExpPlaylist } = require('./regExp');
 
 const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
@@ -30,28 +31,27 @@ client.on('messageCreate', async (message) => {
     let guildQueue = client.player.getQueue(message.guild.id);
 
     if (command === 'p') {
+        const keyword = args.join(' ');
+
         await message.reply('Đợi 1 xíu, bot đang search 😘');
-        await message.channel.sendTyping();
+        message.channel.sendTyping();
+        let queue;
         try {
-            let queue = client.player.createQueue(message.guild.id, {
+            queue = client.player.createQueue(message.guild.id, {
                 data: message,
             });
             await queue.join(message.member.voice.channel);
 
-            let song = await queue.play(args.join(' ')).catch((_) => {
-                if (!guildQueue) queue.stop();
-            });
+            if (keyword.match(regExpPlaylist)) {
+                await queue.playlist(keyword);
+            } else {
+                await queue.play(keyword);
+            }
         } catch (error) {
+            console.log(error);
             message.reply('Bot không đủ quyền để vào room đó :( ');
-        }
-    }
-
-    if (command === 'playlist') {
-        let queue = client.player.createQueue(message.guild.id);
-        await queue.join(message.member.voice.channel);
-        let song = await queue.playlist(args.join(' ')).catch((_) => {
             if (!guildQueue) queue.stop();
-        });
+        }
     }
 
     if (command === 'skip') {
@@ -93,9 +93,13 @@ client.on('messageCreate', async (message) => {
             listSong.push(`[${i + 1}] : ${element.name} - ${element.duration}`);
         });
 
+        const count = listSong.length;
+
+        if (count > 10) listSong.length = 10;
+
         const text = `\`\`\` Bài hát hiện tại: ${guildQueue.nowPlaying} \nChế độ hiện tại: ${
             MODE_MUSIC[repeatMode]
-        } \n\n -----> ĐANG TRONG HÀNG ĐỢI <----- \n\n${listSong.join('\n')} \`\`\``;
+        } \n\n -----> ĐANG CÓ ${count} TRONG HÀNG ĐỢI <----- \n\n${listSong.join('\n')} \`\`\``;
         message.reply(text);
     }
 
@@ -116,7 +120,7 @@ client.on('messageCreate', async (message) => {
     if (command === 'help') {
         const a = [
             `Tiền tố để sử dụng BOT : ${PREFIX}`,
-            'p {từ khoá|link youtube}: thêm nhạc',
+            'p {từ khoá|link youtube|playlist}: thêm nhạc',
             'q: danh sách nhạc',
             'skip: nhảy qua bài mới',
             'pause: dừng nhạc',
@@ -134,6 +138,10 @@ client.on('messageCreate', async (message) => {
 });
 
 client.player.on('songAdd', (queue, song) => {
+    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
+});
+
+client.player.on('playlistAdd', (queue, song) => {
     queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
 });
 
