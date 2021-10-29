@@ -92,7 +92,6 @@ client.on('messageCreate', async (message) => {
                 initMessage: message,
             });
         } catch (error) {
-            console.log(error);
             message.reply('Bot không đủ quyền để vào room đó :( ');
             if (!guildQueue) queue.stop();
         }
