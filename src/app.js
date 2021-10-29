@@ -1,7 +1,10 @@
 require('dotenv').config();
-const { Client, Intents } = require('discord.js');
+const { Client, Intents  } = require('discord.js');
+const { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus, getNextResource , joinVoiceChannel } = require('@discordjs/voice');
 const { Player, RepeatMode } = require('discord-music-player');
+
 const { regExpPlaylist } = require('./regExp');
+const handleEvent = require('./handleEvent');
 
 const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
@@ -16,37 +19,78 @@ const player = new Player(client, {
     leaveOnEmpty: false,
 });
 
+const queueTranslate = {
+    connection: null,
+    keywords: []
+};
+
 client.player = player;
 
 client.on('ready', () => {
     console.log('Online !');
 });
 
+const nextVoice = () => {
+    if (queueTranslate.keywords.length === 0) {
+        queueTranslate.connection = null;
+        return;
+    }
+
+    const player = createAudioPlayer({
+        behaviors: {
+            noSubscriber: NoSubscriberBehavior.Pause,
+        },
+    });
+    queueTranslate.connection.subscribe(player);
+    const text = queueTranslate.keywords[0];
+    const resource = createAudioResource(`http://translate.google.com/translate_tts?tl=vi&q=${text}&client=tw-ob`);
+    player.play(resource);
+    player.on(AudioPlayerStatus.Idle, () => {
+        queueTranslate.keywords.shift();
+        nextVoice(player);
+    });
+}
+
 client.on('messageCreate', async (message) => {
     if (!message.content.startsWith(PREFIX)) return;
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
-
-    const command = args.shift();
     let guildQueue = client.player.getQueue(message.guild.id);
+    const command = args.shift();
+
+    if (command === 'g') {
+            const keyword = args.join(' ');
+            queueTranslate.keywords.push(keyword);
+            console.log(queueTranslate.keywords);
+            if (queueTranslate.connection === null) {
+
+                const queue = client.player.createQueue(message.guild.id);
+                await queue.join(message.member.voice.channel);
+                queueTranslate.connection = getVoiceConnection(message.guild.id);
+                nextVoice();
+            }
+    }
 
     if (command === 'p') {
         const keyword = args.join(' ');
-
         await message.reply('Đợi 1 xíu, bot đang search 😘');
         message.channel.sendTyping();
         let queue;
         try {
-            queue = client.player.createQueue(message.guild.id, {
-                data: message,
-            });
+
+            queue = client.player.createQueue(message.guild.id);
             await queue.join(message.member.voice.channel);
+            let song;
 
             if (keyword.match(regExpPlaylist)) {
-                await queue.playlist(keyword);
+                song = await queue.playlist(keyword);
             } else {
-                await queue.play(keyword);
+                song = await queue.play(keyword);
             }
+
+            song.setData({
+                initMessage: message,
+            });
         } catch (error) {
             console.log(error);
             message.reply('Bot không đủ quyền để vào room đó :( ');
@@ -137,24 +181,6 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-client.player.on('songAdd', (queue, song) => {
-    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
-});
-
-client.player.on('playlistAdd', (queue, song) => {
-    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
-});
-
-client.player.on('songChanged', (queue, newSong, oldSong) => {
-    queue.data.channel.send(`:notes: **${newSong}** đang được phát `);
-});
-
-client.player.on('queueEnd', (queue) => {
-    queue.data.channel.send('Hết nhạc rồi, BOT đi đây !');
-});
-
-client.player.on('clientDisconnect', (queue) => {
-    queue.data.channel.send('Bot đi đây !');
-});
+handleEvent(client);
 
 client.login(TOKEN);
