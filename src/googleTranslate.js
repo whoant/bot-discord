@@ -9,6 +9,14 @@ const {
 } = require('@discordjs/voice');
 const { Player } = require('discord-music-player');
 
+const low = require('lowdb')
+
+const FileSync = require('lowdb/adapters/FileSync')
+
+const adapter = new FileSync('db.json')
+const db = low(adapter);
+db.defaults({ filters: [] })
+    .write();
 
 const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
@@ -27,6 +35,7 @@ const queueTranslate = {
 };
 
 client.player = player;
+
 client.on('ready', () => {
     console.log('Online !');
 });
@@ -55,8 +64,12 @@ const nextVoice = () => {
 
 client.on('messageCreate', async (message) => {
     const text = message.content.toLowerCase();
-    if (text.includes("tuan") || text.includes('tuân')){
-        message.reply("a T cute đúng ko :3");
+
+    const checkFilter = checkKeyWords(text);
+
+    if (checkFilter !== ''){
+
+        message.reply(checkFilter);
     }
 
     if (!message.content.startsWith(PREFIX)) return;
@@ -67,7 +80,6 @@ client.on('messageCreate', async (message) => {
     if (command === 'g') {
         const keyword = args.join(' ');
         queueTranslate.keywords.push(keyword);
-        // console.log(queueTranslate.keywords);
         if (queueTranslate.connection === null) {
 
             const queue = client.player.createQueue(message.guild.id);
@@ -76,7 +88,35 @@ client.on('messageCreate', async (message) => {
             nextVoice();
         }
     }
+
+    if (command === 'leave') {
+        const guidId = message.guild.id;
+        message.reply("Đi đây :( ");
+        getVoiceConnection(guidId).disconnect();
+    }
+
+    if (command === 'filter') {
+
+        if (message.author.id !== '600202809115410451') return;
+        const keyword = args.join(' ');
+        const [key, word] = keyword.split('>');
+        db.get('filters').push({key: key.trim(), word: word.trim() }).write();
+        message.reply("Thêm thành công :3");
+
+    }
+
 });
+
+
+function checkKeyWords(text) {
+    const listKey = db.get('filters').value();
+
+    const filter = listKey.find(item => text.includes(item.key));
+    console.log(filter);
+    if (filter === undefined) return '';
+    return filter.word;
+
+}
 
 client.login(TOKEN);
 
