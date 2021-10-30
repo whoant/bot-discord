@@ -25,41 +25,43 @@ const queueTranslate = {
 
 client.player = player;
 
-client.on('ready', () => {
-    console.log('Online !');
-});
+module.exports = () => {
 
-const nextVoice = () => {
-    if (queueTranslate.keywords.length === 0) {
-        queueTranslate.connection = null;
-        return;
+    client.on('ready', () => {
+        console.log('Online !');
+    });
+
+    const nextVoice = () => {
+        if (queueTranslate.keywords.length === 0) {
+            queueTranslate.connection = null;
+            return;
+        }
+
+        const player = createAudioPlayer({
+            behaviors: {
+                noSubscriber: NoSubscriberBehavior.Pause,
+            },
+        });
+
+        queueTranslate.connection.subscribe(player);
+        const text = queueTranslate.keywords[0];
+        const resource = createAudioResource(`http://translate.google.com/translate_tts?tl=vi&q=${text}&client=tw-ob`);
+        player.play(resource);
+        player.on(AudioPlayerStatus.Idle, () => {
+            queueTranslate.keywords.shift();
+            nextVoice(player);
+        });
     }
 
-    const player = createAudioPlayer({
-        behaviors: {
-            noSubscriber: NoSubscriberBehavior.Pause,
-        },
-    });
+    client.on('messageCreate', async (message) => {
+        if (!message.content.startsWith(PREFIX)) return;
 
-    queueTranslate.connection.subscribe(player);
-    const text = queueTranslate.keywords[0];
-    const resource = createAudioResource(`http://translate.google.com/translate_tts?tl=vi&q=${text}&client=tw-ob`);
-    player.play(resource);
-    player.on(AudioPlayerStatus.Idle, () => {
-        queueTranslate.keywords.shift();
-        nextVoice(player);
-    });
-}
+        const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
+        let guildQueue = client.player.getQueue(message.guild.id);
 
-client.on('messageCreate', async (message) => {
-    if (!message.content.startsWith(PREFIX)) return;
+        const command = args.shift();
 
-    const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
-    let guildQueue = client.player.getQueue(message.guild.id);
-
-    const command = args.shift();
-
-    if (command === 'g') {
+        if (command === 'g') {
             const keyword = args.join(' ');
             queueTranslate.keywords.push(keyword);
             console.log(queueTranslate.keywords);
@@ -70,135 +72,137 @@ client.on('messageCreate', async (message) => {
                 queueTranslate.connection = getVoiceConnection(message.guild.id);
                 nextVoice();
             }
-    }
+        }
 
-    if (command === 'p') {
-        const keyword = args.join(' ');
-        await message.reply('Đợi 1 xíu, bot đang search 😘');
-        message.channel.sendTyping();
-        let queue;
-        try {
+        if (command === 'p') {
+            const keyword = args.join(' ');
+            await message.reply('Đợi 1 xíu, bot đang search 😘');
+            message.channel.sendTyping();
+            let queue;
+            try {
 
-            queue = client.player.createQueue(message.guild.id, {
-                data: message
-            });
-            await queue.join(message.member.voice.channel);
-            let song;
+                queue = client.player.createQueue(message.guild.id, {
+                    data: message
+                });
+                await queue.join(message.member.voice.channel);
+                let song;
 
-            if (keyword.match(regExpPlaylist)) {
-                song = await queue.playlist(keyword);
-            } else {
-                song = await queue.play(keyword);
+                if (keyword.match(regExpPlaylist)) {
+                    song = await queue.playlist(keyword);
+                } else {
+                    song = await queue.play(keyword);
+                }
+
+                song.setData({
+                    initMessage: message,
+                });
+            } catch (error) {
+                console.error(error);
+                message.reply('Bot không đủ quyền để vào room đó :( ');
+                if (!guildQueue) queue.stop();
+            }
+        }
+
+        if (command === 'skip') {
+            guildQueue.skip();
+        }
+
+        if (command === 'stop') {
+            message.channel.send('Bot đi đây :((( ');
+            guildQueue.stop();
+        }
+
+        if (command === 'removeLoop') {
+            message.channel.send('Tắt vòng lặp thành công !');
+            guildQueue.setRepeatMode(RepeatMode.DISABLED);
+        }
+
+        if (command === 'loop') {
+            message.channel.send('Bật vòng lặp 1 bài thành công !');
+            guildQueue.setRepeatMode(RepeatMode.SONG);
+        }
+
+        if (command === 'loopQueue') {
+            message.channel.send('Bật vòng lặp cả danh sách thành công !');
+            guildQueue.setRepeatMode(RepeatMode.QUEUE);
+        }
+
+        //queue
+        if (command === 'q') {
+            let listSong = [];
+
+            if (!guildQueue) {
+                message.reply('Hiện tại chưa có bài hát nào !');
+                return;
             }
 
-            song.setData({
-                initMessage: message,
+            const { repeatMode } = guildQueue;
+
+            guildQueue.songs.forEach((element, i) => {
+                listSong.push(`[${i + 1}] : ${element.name} - ${element.duration}`);
             });
-        } catch (error) {
-            console.error(error);
-            message.reply('Bot không đủ quyền để vào room đó :( ');
-            if (!guildQueue) queue.stop();
-        }
-    }
 
-    if (command === 'skip') {
-        guildQueue.skip();
-    }
+            const count = listSong.length;
 
-    if (command === 'stop') {
-        message.channel.send('Bot đi đây :((( ');
-        guildQueue.stop();
-    }
+            if (count > 10) listSong.length = 10;
 
-    if (command === 'removeLoop') {
-        message.channel.send('Tắt vòng lặp thành công !');
-        guildQueue.setRepeatMode(RepeatMode.DISABLED);
-    }
-
-    if (command === 'loop') {
-        message.channel.send('Bật vòng lặp 1 bài thành công !');
-        guildQueue.setRepeatMode(RepeatMode.SONG);
-    }
-
-    if (command === 'loopQueue') {
-        message.channel.send('Bật vòng lặp cả danh sách thành công !');
-        guildQueue.setRepeatMode(RepeatMode.QUEUE);
-    }
-
-    //queue
-    if (command === 'q') {
-        let listSong = [];
-
-        if (!guildQueue) {
-            message.reply('Hiện tại chưa có bài hát nào !');
-            return;
+            const text = `\`\`\` Bài hát hiện tại: ${guildQueue.nowPlaying} \nChế độ hiện tại: ${
+                MODE_MUSIC[repeatMode]
+            } \n\n -----> ĐANG CÓ ${count} TRONG HÀNG ĐỢI <----- \n\n${listSong.join('\n')} \`\`\``;
+            message.reply(text);
         }
 
-        const { repeatMode } = guildQueue;
+        if (command === 'nowPlaying') {
+            message.reply(`Bài hát hiện tại : **${guildQueue.nowPlaying}**`);
+        }
 
-        guildQueue.songs.forEach((element, i) => {
-            listSong.push(`[${i + 1}] : ${element.name} - ${element.duration}`);
-        });
+        if (command === 'pause') {
+            guildQueue.setPaused(true);
+            message.reply('Dừng phát nhạc !');
+        }
 
-        const count = listSong.length;
+        if (command === 'resume') {
+            guildQueue.setPaused(false);
+            message.reply('Chạy lại nhạc rồi !');
+        }
 
-        if (count > 10) listSong.length = 10;
+        if (command === 'help') {
+            const a = [
+                `Tiền tố để sử dụng BOT : ${PREFIX}`,
+                'p {từ khoá|link youtube|playlist}: thêm nhạc',
+                'q: danh sách nhạc',
+                'skip: nhảy qua bài mới',
+                'pause: dừng nhạc',
+                'resume: tiếp tục nhạc',
+                'stop: đuổi bot',
+                'nowPlaying: nhạc phát hiện tại',
+                'loop: chế độ lặp 1 bài',
+                'loopQueue: chế độ lập cả danh sách',
+                'removeLoop: xoá chế độ lặp',
+            ];
 
-        const text = `\`\`\` Bài hát hiện tại: ${guildQueue.nowPlaying} \nChế độ hiện tại: ${
-            MODE_MUSIC[repeatMode]
-        } \n\n -----> ĐANG CÓ ${count} TRONG HÀNG ĐỢI <----- \n\n${listSong.join('\n')} \`\`\``;
-        message.reply(text);
-    }
+            const text = ` \`\`\`${a.join('\n')}\`\`\``;
+            message.reply(text);
+        }
+    });
 
-    if (command === 'nowPlaying') {
-        message.reply(`Bài hát hiện tại : **${guildQueue.nowPlaying}**`);
-    }
+    client.player.on('songAdd', (queue, song) => {
 
-    if (command === 'pause') {
-        guildQueue.setPaused(true);
-        message.reply('Dừng phát nhạc !');
-    }
+        queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
+    });
 
-    if (command === 'resume') {
-        guildQueue.setPaused(false);
-        message.reply('Chạy lại nhạc rồi !');
-    }
+    client.player.on('playlistAdd', (queue, song) => {
+        queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
+    });
 
-    if (command === 'help') {
-        const a = [
-            `Tiền tố để sử dụng BOT : ${PREFIX}`,
-            'p {từ khoá|link youtube|playlist}: thêm nhạc',
-            'q: danh sách nhạc',
-            'skip: nhảy qua bài mới',
-            'pause: dừng nhạc',
-            'resume: tiếp tục nhạc',
-            'stop: đuổi bot',
-            'nowPlaying: nhạc phát hiện tại',
-            'loop: chế độ lặp 1 bài',
-            'loopQueue: chế độ lập cả danh sách',
-            'removeLoop: xoá chế độ lặp',
-        ];
+    client.player.on('songChanged', (queue, newSong, oldSong) => {
+        queue.data.channel.send(`:notes: **${newSong}** đang được phát `);
+    });
 
-        const text = ` \`\`\`${a.join('\n')}\`\`\``;
-        message.reply(text);
-    }
-});
+    client.player.on('queueEnd', (queue) => {
+        queue.data.channel.send('Hết nhạc rồi, BOT đi đây !');
+    });
 
-client.player.on('songAdd', (queue, song) => {
+    client.login(TOKEN);
 
-    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
-});
-
-client.player.on('playlistAdd', (queue, song) => {
-    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
-});
-
-client.player.on('songChanged', (queue, newSong, oldSong) => {
-    queue.data.channel.send(`:notes: **${newSong}** đang được phát `);
-});
-
-client.player.on('queueEnd', (queue) => {
-    queue.data.channel.send('Hết nhạc rồi, BOT đi đây !');
-});
-
-client.login(TOKEN);
+}
