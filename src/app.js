@@ -1,10 +1,9 @@
 require('dotenv').config();
 const { Client, Intents  } = require('discord.js');
-const { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus, getNextResource , joinVoiceChannel } = require('@discordjs/voice');
+const { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus  } = require('@discordjs/voice');
 const { Player, RepeatMode } = require('discord-music-player');
 
 const { regExpPlaylist } = require('./regExp');
-const handleEvent = require('./handleEvent');
 
 const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
@@ -41,6 +40,7 @@ const nextVoice = () => {
             noSubscriber: NoSubscriberBehavior.Pause,
         },
     });
+
     queueTranslate.connection.subscribe(player);
     const text = queueTranslate.keywords[0];
     const resource = createAudioResource(`http://translate.google.com/translate_tts?tl=vi&q=${text}&client=tw-ob`);
@@ -56,6 +56,7 @@ client.on('messageCreate', async (message) => {
 
     const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
     let guildQueue = client.player.getQueue(message.guild.id);
+
     const command = args.shift();
 
     if (command === 'g') {
@@ -78,7 +79,9 @@ client.on('messageCreate', async (message) => {
         let queue;
         try {
 
-            queue = client.player.createQueue(message.guild.id);
+            queue = client.player.createQueue(message.guild.id, {
+                data: message
+            });
             await queue.join(message.member.voice.channel);
             let song;
 
@@ -92,6 +95,7 @@ client.on('messageCreate', async (message) => {
                 initMessage: message,
             });
         } catch (error) {
+            console.error(error);
             message.reply('Bot không đủ quyền để vào room đó :( ');
             if (!guildQueue) queue.stop();
         }
@@ -180,6 +184,21 @@ client.on('messageCreate', async (message) => {
     }
 });
 
-handleEvent(client);
+client.player.on('songAdd', (queue, song) => {
+
+    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
+});
+
+client.player.on('playlistAdd', (queue, song) => {
+    queue.data.reply(`:notes: **${song}** đã được thêm vào hàng đợi `);
+});
+
+client.player.on('songChanged', (queue, newSong, oldSong) => {
+    queue.data.channel.send(`:notes: **${newSong}** đang được phát `);
+});
+
+client.player.on('queueEnd', (queue) => {
+    queue.data.channel.send('Hết nhạc rồi, BOT đi đây !');
+});
 
 client.login(TOKEN);
