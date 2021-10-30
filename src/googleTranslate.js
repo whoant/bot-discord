@@ -65,10 +65,9 @@ const nextVoice = () => {
 client.on('messageCreate', async (message) => {
     const text = message.content.toLowerCase();
 
+    if (message.author.bot) return;
     const checkFilter = checkKeyWords(text);
-
     if (checkFilter !== ''){
-
         message.reply(checkFilter);
     }
 
