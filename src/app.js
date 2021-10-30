@@ -17,8 +17,6 @@ const player = new Player(client, {
     leaveOnEmpty: false,
 });
 
-
-
 client.player = player;
 
 module.exports = () => {
@@ -27,12 +25,14 @@ module.exports = () => {
         console.log('Online !');
     });
 
-
     client.on('messageCreate', async (message) => {
         if (!message.content.startsWith(PREFIX)) return;
 
         const args = message.content.slice(PREFIX.length).trim().split(/ +/g);
         let guildQueue = client.player.getQueue(message.guild.id);
+
+        const command = args.shift();
+
 
         if (command === 'p') {
             const keyword = args.join(' ');
