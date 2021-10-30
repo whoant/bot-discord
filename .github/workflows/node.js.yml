@@ -29,6 +29,7 @@ jobs:
               run: |
                   touch .env
                   echo TOKEN_BOT=${{secrets.TOKEN}} > .env
+                  echo PREFIX=${{secrets.TOKEN_BOT_TRANSLATE}}>> .env
                   echo PREFIX=${{secrets.PREFIX}}>> .env
 
             - run: pm2 restart bot-discord
