@@ -3,27 +3,25 @@ const { Client, Intents  } = require('discord.js');
 const { getVoiceConnection, NoSubscriberBehavior, createAudioPlayer, createAudioResource, AudioPlayerStatus  } = require('@discordjs/voice');
 const { Player } = require('discord-music-player');
 
-const client = new Client({
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
-});
-
-const TOKEN = process.env.TOKEN_BOT_TRANSLATE;
-const PREFIX = process.env.PREFIX;
-
-const player = new Player(client, {
-    leaveOnEmpty: false,
-});
-
-const queueTranslate = {
-    connection: null,
-    keywords: []
-};
-
-client.player = player;
 
 
-module.exports = () => {
+    const client = new Client({
+        intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
+    });
 
+    const TOKEN = process.env.TOKEN_BOT_TRANSLATE;
+    const PREFIX = process.env.PREFIX;
+
+    const player = new Player(client, {
+        leaveOnEmpty: false,
+    });
+
+    const queueTranslate = {
+        connection: null,
+        keywords: []
+    };
+
+    client.player = player;
     client.on('ready', () => {
         console.log('Online !');
     });
@@ -71,4 +69,4 @@ module.exports = () => {
     });
 
     client.login(TOKEN);
-}
+

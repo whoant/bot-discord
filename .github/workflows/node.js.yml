@@ -33,5 +33,6 @@ jobs:
                   echo PREFIX=${{secrets.PREFIX}}>> .env
 
             - run: pm2 restart bot-discord
+            - run: pm2 restart bot-google
 #            - run: pm2 delete server-bidv
 

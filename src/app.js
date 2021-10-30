@@ -4,23 +4,23 @@ const { Player, RepeatMode } = require('discord-music-player');
 
 const { regExpPlaylist } = require('./regExp');
 
-const client = new Client({
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
-});
 
-const MODE_MUSIC = ['Chưa vào vòng lặp', 'Vòng lặp 1 bài ', 'Vòng lặp cả danh sách'];
 
-const TOKEN = process.env.TOKEN_BOT;
-const PREFIX = process.env.PREFIX;
 
-const player = new Player(client, {
-    leaveOnEmpty: false,
-});
+    const client = new Client({
+        intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
+    });
 
-client.player = player;
+    const MODE_MUSIC = ['Chưa vào vòng lặp', 'Vòng lặp 1 bài ', 'Vòng lặp cả danh sách'];
 
-module.exports = () => {
+    const TOKEN = process.env.TOKEN_BOT;
+    const PREFIX = process.env.PREFIX;
 
+    const player = new Player(client, {
+        leaveOnEmpty: false,
+    });
+
+    client.player = player;
     client.on('ready', () => {
         console.log('Online !');
     });
@@ -32,7 +32,6 @@ module.exports = () => {
         let guildQueue = client.player.getQueue(message.guild.id);
 
         const command = args.shift();
-
 
         if (command === 'p') {
             const keyword = args.join(' ');
@@ -68,8 +67,13 @@ module.exports = () => {
         }
 
         if (command === 'stop') {
-            message.channel.send('Bot đi đây :((( ');
-            guildQueue.stop();
+            try{
+
+                message.channel.send('Bot đi đây :((( ');
+                guildQueue.stop();
+            }catch (e){
+                console.error(e);
+            }
         }
 
         if (command === 'removeLoop') {
@@ -165,4 +169,3 @@ module.exports = () => {
 
     client.login(TOKEN);
 
-}
