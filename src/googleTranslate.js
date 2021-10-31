@@ -90,7 +90,7 @@ client.on('messageCreate', async (message) => {
 
     if (command === 'leave') {
         const guidId = message.guild.id;
-        message.reply("Đi đây :( ");
+        message.reply("Dỗi á nha :( ");
         queueTranslate.connection = null;
         getVoiceConnection(guidId).disconnect();
     }
