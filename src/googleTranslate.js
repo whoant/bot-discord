@@ -91,6 +91,7 @@ client.on('messageCreate', async (message) => {
     if (command === 'leave') {
         const guidId = message.guild.id;
         message.reply("Đi đây :( ");
+        queueTranslate.connection = null;
         getVoiceConnection(guidId).disconnect();
     }
 
@@ -111,7 +112,6 @@ function checkKeyWords(text) {
     const listKey = db.get('filters').value();
 
     const filter = listKey.find(item => text.includes(item.key));
-    console.log(filter);
     if (filter === undefined) return '';
     return filter.word;
 
