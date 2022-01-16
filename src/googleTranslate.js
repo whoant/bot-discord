@@ -6,14 +6,16 @@ const {
     createAudioPlayer,
     createAudioResource,
     AudioPlayerStatus,
+    MessageAttachment,
 } = require('@discordjs/voice');
 const { Player } = require('discord-music-player');
+const { getLinkTikTok } = require('../lib/Tiktok');
 
 const low = require('lowdb');
 
 const FileSync = require('lowdb/adapters/FileSync');
 
-const ZaloVoice = require('./ZaloVoice');
+const ZaloVoice = require('../lib/ZaloVoice');
 
 const adapter = new FileSync('db.json');
 const db = low(adapter);
@@ -128,6 +130,25 @@ client.on('messageCreate', async (message) => {
         db.get('filters').push({ key: key.trim(), word: word.trim() }).write();
         message.reply('Thêm thành công :3');
 
+    }
+
+    if (command === 'tiktok') {
+        const keyword = args.join(' ');
+        try {
+            const link = await getLinkTikTok(keyword);
+            message.reply('Đang upload file nè !!');
+            message.channel.send({
+                files: [
+                    {
+                        attachment: link[0],
+                        name: '232.mp4',
+                    },
+                ],
+            });
+        } catch (e) {
+            console.log(e);
+            message.reply('Link tầm bậy rồi bạn êyyyy !');
+        }
     }
 
 });

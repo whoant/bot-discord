@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Client, Intents } = require('discord.js');
 const { Player, RepeatMode } = require('discord-music-player');
 
-const { regExpPlaylist } = require('./regExp');
+const { regExpPlaylist } = require('../lib/regExp');
 
 
 const client = new Client({
