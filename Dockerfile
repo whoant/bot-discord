@@ -1,8 +1,9 @@
-FROM node:16.13.2-alpine3.14
+FROM node:16.13.2
 
 WORKDIR /app
 COPY package*.json ./
 COPY yarn.lock ./
+
 
 ENV PREFIX=@
 ENV TOKEN_VOICE=
