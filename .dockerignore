@@ -7,3 +7,4 @@ nodemon.json
 db.json
 .prettierrc.json
 .env.example
+.git
