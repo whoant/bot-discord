@@ -6,7 +6,6 @@ const {
     createAudioPlayer,
     createAudioResource,
     AudioPlayerStatus,
-    MessageAttachment,
 } = require('@discordjs/voice');
 const { Player } = require('discord-music-player');
 const { getLinkTikTok } = require('../lib/Tiktok');
@@ -26,13 +25,14 @@ const client = new Client({
     intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_VOICE_STATES],
 });
 
-const TOKEN = process.env.TOKEN_BOT_TRANSLATE;
+const TOKEN = process.env.TOKEN_GOOGLE;
 const PREFIX = process.env.PREFIX;
 
 const player = new Player(client, {
     leaveOnEmpty: false,
 });
 
+const AUTHOR = '600202809115410451';
 
 let SWITCH_VOICE = 'google';
 
@@ -44,7 +44,7 @@ const queueTranslate = {
 client.player = player;
 
 client.on('ready', () => {
-    console.log('Online !');
+    console.log('Online BOT GOOGLE !');
 });
 
 const nextVoice = async () => {
@@ -117,14 +117,14 @@ client.on('messageCreate', async (message) => {
     }
 
     if (command === 'voice') {
-        if (message.author.id !== '600202809115410451') return;
+        if (message.author.id !== AUTHOR) return;
         const keyword = args.join(' ');
         SWITCH_VOICE = keyword;
         message.reply(`Chuyển voice: ${keyword} thành công !`);
     }
 
     if (command === 'filter') {
-        if (message.author.id !== '600202809115410451') return;
+        if (message.author.id !== AUTHOR) return;
         const keyword = args.join(' ');
         const [key, word] = keyword.split('>');
         db.get('filters').push({ key: key.trim(), word: word.trim() }).write();
@@ -147,6 +147,10 @@ client.on('messageCreate', async (message) => {
             });
         } catch (e) {
             console.log(e);
+            message.channel.send('=== ERROR ===');
+            message.channel.send(e.message);
+            message.channel.send(`Please check <@${AUTHOR}>`);
+            message.channel.send('=============');
             message.reply('Link tầm bậy rồi bạn êyyyy !');
         }
     }
